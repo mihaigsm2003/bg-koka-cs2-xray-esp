@@ -1,5 +1,6 @@
 ﻿using CounterStrikeSharp.API;
 using CounterStrikeSharp.API.Core;
+using CounterStrikeSharp.API.Modules.Admin;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
 using System.Linq;
@@ -88,18 +89,23 @@ public partial class AdminESP
                         info.TransmitEntities.Remove((int)targetObserverPawn.Index);
                 }
 
-                if (toggleAdminESP[player.Slot])
-                    continue;
+                // dacă adminul are ESP activ → NU eliminăm glowing entities pentru el
+if (AdminManager.PlayerHasPermissions(player, Config.AdminFlag) && toggleAdminESP[player.Slot])
+{
+    continue; // îl lăsăm să vadă glow
+}
 
-                foreach (var glowingProp in glowingPlayers)
-                {
-                    if (glowingProp.Value.Item1 != null && glowingProp.Value.Item1.IsValid
-                    && glowingProp.Value.Item2 != null && glowingProp.Value.Item2.IsValid)
-                    {
-                        info.TransmitEntities.Remove((int)glowingProp.Value.Item1.Index);
-                        info.TransmitEntities.Remove((int)glowingProp.Value.Item2.Index);
-                    }
-                }
+// altfel → ascundem glowing entities
+foreach (var glowingProp in glowingPlayers)
+{
+    if (glowingProp.Value.Item1 != null && glowingProp.Value.Item1.IsValid
+    && glowingProp.Value.Item2 != null && glowingProp.Value.Item2.IsValid)
+    {
+        info.TransmitEntities.Remove((int)glowingProp.Value.Item1.Index);
+        info.TransmitEntities.Remove((int)glowingProp.Value.Item2.Index);
+    }
+}
+
             }
         }
     }

@@ -13,7 +13,7 @@ public sealed partial class AdminESP : BasePlugin, IPluginConfig<Config>
 {
     public override string ModuleName => "Admin ESP";
     public override string ModuleAuthor => "AquaVadis & GSM-RO";
-    public override string ModuleVersion => "1.2.0s";
+    public override string ModuleVersion => "1.2.1";
     public override string ModuleDescription => "Admin ESP plugin adapted for CSS v335 with bot control fix";
 
     private bool[] toggleAdminESP = new bool[64];
