@@ -2,6 +2,8 @@
 using CounterStrikeSharp.API.Core;
 using CounterStrikeSharp.API.Modules.Entities;
 using CounterStrikeSharp.API.Modules.Utils;
+using CounterStrikeSharp.API.Modules.Admin; // Added for AdminManager
+
 namespace AdminESP;
 public partial class AdminESP
 {
@@ -37,7 +39,17 @@ public partial class AdminESP
         if(player == null || player.IsValid is not true) return;
         if (cachedPlayers.Contains(player) is not true)
             cachedPlayers.Add(player);
-       
+        // NOU: Activează persistent ESP dacă wantESP e true și player e dead/spectator la connect
+        AddTimer(0.5f, () => {
+            if (player == null || !player.IsValid || player.PawnIsAlive) return;
+            if (wantESP[player.Slot] && (player.Team == CsTeam.Spectator || Config.AllowDeadAdminESP))
+            {
+                toggleAdminESP[player.Slot] = true;
+                togglePlayersGlowing = true;
+                SetAllPlayersGlowing();
+                SendMessageToSpecificChat(player, msg: "Admin ESP persistent has been {GREEN}auto-enabled{DEFAULT} on connect!", print: PrintTo.Chat);
+            }
+        });
     }
     private void OnClientConnected(int slot)
     {
@@ -119,13 +131,19 @@ public partial class AdminESP
         if (player is null
         || player.IsValid is not true
         || player.Connected is not PlayerConnectedState.PlayerConnected) return HookResult.Continue;
+        // Verifică dacă ESP era activ înainte de dezactivare
+        bool wasEnabled = toggleAdminESP[player.Slot];
         // Dezactivează imediat (fără delay)
         toggleAdminESP[player.Slot] = false;
         if (togglePlayersGlowing is not true || AreThereEsperingAdmins() is not true)
         {
             RemoveAllGlowingPlayers();
         }
-        SendMessageToSpecificChat(player, msg: "Admin ESP has been {RED}disabled{DEFAULT} because you spawned!", print: PrintTo.Chat);
+        // Trimite mesajul doar dacă ESP era activ (și opțional, doar adminilor)
+        if (wasEnabled && AdminManager.PlayerHasPermissions(player, Config.AdminFlag))
+        {
+            SendMessageToSpecificChat(player, msg: "Admin ESP has been {RED}disabled{DEFAULT} because you spawned!", print: PrintTo.Chat);
+        }
         return HookResult.Continue;
     }
     public HookResult OnRoundStart(EventRoundStart @event, GameEventInfo info)
@@ -192,8 +210,8 @@ public partial class AdminESP
         //set 'toggleAdminESP' to false regardless, on player disconnected
         //thus avoid any lingering glowing props
         toggleAdminESP[slot] = false;
-        // NOU: Resetează și starea persistentă la disconnect (opțional; poți elimina dacă vrei să persiste peste reconectări)
-        wantESP[slot] = false;
+        // Comentat: Nu reseta wantESP la disconnect pentru a persista peste reconectări
+        // wantESP[slot] = false;
         //remove player from cached list
         if (cachedPlayers.Contains(player) is true)
             cachedPlayers.Remove(player);
